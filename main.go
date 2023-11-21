@@ -63,7 +63,7 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 		downloadBinary()
 	}
 
-	p := persist{configURL: url.String()}
+	p := persist{ConfigURL: url.String()}
 	err = p.save()
 	if err != nil {
 		log.Fatalf("Error saving persist: %s", err)
@@ -104,7 +104,7 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 		}
 	}
 	downloadBinary()
-	downloadConfig(p.configURL)
+	downloadConfig(p.ConfigURL)
 	err = srv.Start()
 	if err != nil {
 		log.Fatalf("Error starting service: %s", err)

@@ -6,7 +6,7 @@ import (
 )
 
 type persist struct {
-	configURL string
+	ConfigURL string `json:"config_url"`
 }
 
 
