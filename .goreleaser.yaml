@@ -8,6 +8,8 @@ before:
 
 builds:
   - binary: xx
+    ldflags:
+        - -s -w
     env:
       - CGO_ENABLED=0
     goos:
