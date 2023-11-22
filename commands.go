@@ -36,6 +36,28 @@ func restartCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
+func statusToString(status service.Status) string {
+	switch status {
+	case service.StatusRunning:
+		return "Running"
+	case service.StatusStopped:
+		return "Stopped"
+	case service.StatusUnknown:
+		return "Unknown"
+	default:
+		return "Unexpected"
+	}
+}
+
+func statusCmdRun(cmd *cobra.Command, args []string) {
+	status, err := srv.Status()
+	if err != nil {
+		log.Fatalf("Error getting service status: %s", err)
+	}
+	log.Printf("Service status: %s", statusToString(status))
+
+}
+
 func installCmdRun(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		log.Println("Please specify an url for install.")
@@ -192,5 +214,11 @@ func init() {
 		Hidden: true,
 	}
 
-	rootCmd.AddCommand(startCmd, stopCmd, restartCmd, installCmd, uninstallCmd, updateCmd, upgradeCmd, serviceCmd)
+	statusCmd := &cobra.Command{
+		Use:   "status",
+		Short: "Get the status of the xx",
+		Run:   statusCmdRun,
+	}
+
+	rootCmd.AddCommand(startCmd, stopCmd, restartCmd, installCmd, uninstallCmd, updateCmd, upgradeCmd, serviceCmd, statusCmd)
 }
