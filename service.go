@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"syscall"
 	"time"
 )
 
@@ -52,11 +51,7 @@ func (*program) Start(s service.Service) error {
 		cmd.Stdout = logWriter
 		cmd.Stderr = logWriter
 
-		if runtime.GOOS == "windows" {
-			cmd.SysProcAttr = &syscall.SysProcAttr{
-				HideWindow: true,
-			}
-		}
+		addHideWindow(cmd)
 		logWriter.WriteString("Starting process...\n")
 		err = cmd.Start()
 		logWriter.WriteString("Process started...\n")
