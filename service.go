@@ -16,18 +16,39 @@ var cmd *exec.Cmd
 type program struct{}
 
 func (*program) Start(s service.Service) error {
-	absConfig, err := filepath.Abs(ConfigFile)
+	logger, err := s.Logger(nil)
+	logWriter, err := os.OpenFile(LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Error opening log file: %s", err)
+	}
+
 	if err != nil {
 		return err
 	}
 
-	go func() {
-		cmd = exec.Command(BinaryFile, "run", "-c", absConfig)
-
-		logWriter, err := os.OpenFile(LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	absConfig, err := filepath.Abs(ConfigFile)
+	if err != nil {
+		_, err = logWriter.WriteString("Error getting absolute path of config file: " + err.Error() + "\n")
 		if err != nil {
-			log.Fatalf("Error opening log file: %s", err)
+			return err
 		}
+		return err
+	}
+
+	absWorkDir, err := filepath.Abs(WorkDir)
+	if err != nil {
+		_, err = logWriter.WriteString("Error getting absolute path of work dir: " + err.Error() + "\n")
+		if err != nil {
+			return err
+		}
+		return err
+	}
+
+	go func() {
+		logWriter.WriteString("Starting service...\n")
+
+		cmd = exec.Command(BinaryFile, "run", "-c", absConfig, "-D", absWorkDir, "--disable-color")
+
 		cmd.Stdout = logWriter
 		cmd.Stderr = logWriter
 
@@ -36,10 +57,18 @@ func (*program) Start(s service.Service) error {
 				HideWindow: true,
 			}
 		}
-
+		logWriter.WriteString("Starting process...\n")
 		err = cmd.Start()
+		logWriter.WriteString("Process started...\n")
 		if err != nil {
-			log.Println("Error starting process: ", err)
+			logger.Infof("Error starting process: %s", err)
+			return
+		}
+		logWriter.WriteString("Waiting process...\n")
+		err = cmd.Wait()
+		logWriter.WriteString("Process finished...\n")
+		if err != nil {
+			logger.Infof("Error waiting process: %s", err)
 			return
 		}
 	}()

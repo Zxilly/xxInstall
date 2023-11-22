@@ -20,9 +20,13 @@ const pipeBase = `\\.\pipe\`
 
 const logoutName = pipeBase + "XXLogOutput"
 
-const closeType = 7
-
 func init() {
+	for _, arg := range os.Args {
+		if arg == "service" {
+			return
+		}
+	}
+
 	if !isRoot() {
 		initServer()
 		runMeElevated()
@@ -48,23 +52,6 @@ func init() {
 		}
 
 		// do nothing
-	}
-}
-
-type ipcWriter struct {
-	conn net.Conn
-}
-
-func appendLog(s string) {
-	f, err := os.OpenFile(LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalf("Error opening log file: %s", err)
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(s + "\n")
-	if err != nil {
-		log.Fatalf("Error writing to log file: %s", err)
 	}
 }
 
@@ -107,35 +94,7 @@ func runAsDisplay() {
 }
 
 func isRoot() bool {
-	var sid *windows.SID
-
-	err := windows.AllocateAndInitializeSid(
-		&windows.SECURITY_NT_AUTHORITY,
-		2,
-		windows.SECURITY_BUILTIN_DOMAIN_RID,
-		windows.DOMAIN_ALIAS_RID_ADMINS,
-		0, 0, 0, 0, 0, 0,
-		&sid)
-	if err != nil {
-		log.Fatalf("SID Error: %s", err)
-		return false
-	}
-	defer func(sid *windows.SID) {
-		err := windows.FreeSid(sid)
-		if err != nil {
-			log.Fatalf("SID Free Error: %s", err)
-		}
-	}(sid)
-
-	token := windows.Token(0)
-
-	member, err := token.IsMember(sid)
-	if err != nil {
-		log.Fatalf("Token Membership Error: %s", err)
-		return false
-	}
-
-	return member
+	return windows.GetCurrentProcessToken().IsElevated()
 }
 
 func runMeElevated() {
