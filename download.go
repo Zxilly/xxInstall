@@ -53,12 +53,12 @@ func downloadBinary() {
 	} else {
 		extension = ".tar.gz"
 	}
-	
+
 	var target *github.ReleaseAsset
 
 	for _, asset := range assets {
 		name := asset.GetName()
-		if strings.HasSuffix(name, goos + "-" + goarch + extension) {
+		if strings.HasSuffix(name, goos+"-"+goarch+extension) {
 			target = asset
 			break
 		}
@@ -68,39 +68,39 @@ func downloadBinary() {
 		log.Fatalf("No asset found for %s-%s", goos, goarch)
 	}
 
+	log.Println("Downloading asset")
 	// download the asset
-	resp, err := http.Get(target.GetBrowserDownloadURL())
+	resp, err := http.Get("https://gp.zxilly.dev/" + target.GetBrowserDownloadURL())
 	if err != nil {
 		log.Fatalf("Error downloading asset: %s", err)
 	}
 
 	defer resp.Body.Close()
-
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Error reading asset: %s", err)
 	}
 	log.Println("Downloaded asset")
-	
+
 	extractCompressedFile(content)
 }
 
 func extractCompressedFile(fileByte []byte) {
 	if runtime.GOOS == "windows" {
-		zipReader,err  := zip.NewReader(bytes.NewReader(fileByte), int64(len(fileByte)))
+		zipReader, err := zip.NewReader(bytes.NewReader(fileByte), int64(len(fileByte)))
 		if err != nil {
 			log.Fatalf("Error reading zip: %s", err)
 		}
 
 		for _, file := range zipReader.File {
-			if strings.HasPrefix(file.Name, "sing-box"){
-				fo,err := file.Open()
+			if strings.HasPrefix(file.Name, "sing-box") {
+				fo, err := file.Open()
 				if err != nil {
 					log.Fatalf("Error opening file: %s", err)
 				}
 				defer fo.Close()
 
-				file, err := os.Create(BINARY_FILE)
+				file, err := os.Create(BinaryFile)
 				if err != nil {
 					log.Fatalf("Error creating file: %s", err)
 				}
@@ -110,7 +110,7 @@ func extractCompressedFile(fileByte []byte) {
 				if err != nil {
 					log.Fatalf("Error copying file: %s", err)
 				}
-				
+
 				err = file.Chmod(0755)
 				if err != nil {
 					log.Fatalf("Error chmod file: %s", err)
@@ -133,8 +133,8 @@ func extractCompressedFile(fileByte []byte) {
 				log.Fatalf("Error reading tar: %s", err)
 			}
 
-			if strings.HasPrefix(header.Name, "sing-box"){
-				file, err := os.Create(BINARY_FILE)
+			if strings.HasPrefix(header.Name, "sing-box") {
+				file, err := os.Create(BinaryFile)
 				if err != nil {
 					log.Fatalf("Error creating file: %s", err)
 				}
@@ -144,14 +144,14 @@ func extractCompressedFile(fileByte []byte) {
 				if err != nil {
 					log.Fatalf("Error copying file: %s", err)
 				}
-				
+
 				err = file.Chmod(0755)
 				if err != nil {
 					log.Fatalf("Error chmod file: %s", err)
 				}
 			}
 		}
-	}	
+	}
 	log.Println("Extracted asset")
 }
 
@@ -169,7 +169,7 @@ func downloadConfig(u string) {
 	}
 	log.Println("Downloaded config")
 
-	err = os.WriteFile(CONFIG_FILE, content, 0644)
+	err = os.WriteFile(ConfigFile, content, 0644)
 	if err != nil {
 		log.Fatalf("Error writing config: %s", err)
 	}

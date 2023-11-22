@@ -6,7 +6,7 @@ import (
 )
 
 func isExist(path string) bool {
-	_, err := os.Stat(WORK_DIR + string(os.PathSeparator) + path)
+	_, err := os.Stat(WorkDir + string(os.PathSeparator) + path)
 	return err == nil || os.IsExist(err)
 }
 

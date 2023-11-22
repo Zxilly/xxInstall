@@ -5,18 +5,25 @@ import (
 	"runtime"
 )
 
-var WORK_DIR = "prog"
+var WorkDir = "prog"
 
-var BINARY_FILE string
+var BinaryFile string
 
-var CONFIG_FILE = WORK_DIR + string(os.PathSeparator) + "config.json"
+var ConfigFile = WorkDir + string(os.PathSeparator) + "config.json"
+
+var LogFile = WorkDir + string(os.PathSeparator) + "xx.log"
+
+var PersistFile = WorkDir + string(os.PathSeparator) + "persist.json"
 
 func init() {
-	os.MkdirAll(WORK_DIR, 0755)
+	err := os.MkdirAll(WorkDir, 0755)
+	if err != nil {
+		panic(err)
+	}
 
 	if runtime.GOOS == "windows" {
-		BINARY_FILE = WORK_DIR + string(os.PathSeparator) + "sing-box.exe"
+		BinaryFile = WorkDir + string(os.PathSeparator) + "sing-box.exe"
 	} else {
-		BINARY_FILE = WORK_DIR + string(os.PathSeparator) + "sing-box"
+		BinaryFile = WorkDir + string(os.PathSeparator) + "sing-box"
 	}
 }
