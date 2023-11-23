@@ -14,6 +14,7 @@ var cmd *exec.Cmd
 
 type program struct{}
 
+//goland:noinspection GoUnhandledErrorResult
 func (*program) Start(s service.Service) error {
 	logger, err := s.Logger(nil)
 	logWriter, err := os.OpenFile(LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
@@ -66,6 +67,11 @@ func (*program) Start(s service.Service) error {
 			logger.Infof("Error waiting process: %s", err)
 			return
 		}
+		err = s.Stop()
+		if err != nil {
+			logWriter.WriteString("Error stopping service: " + err.Error() + "\n")
+			return
+		}
 	}()
 
 	return nil
@@ -109,6 +115,21 @@ var srv service.Service
 
 func init() {
 	var err error
+
+	var dependencies []string
+	if runtime.GOOS == "windows" {
+		dependencies = []string{
+			"LanmanServer",
+		}
+	} else if runtime.GOOS == "linux" {
+		dependencies = []string{
+			"Wants=network-online.target",
+			"After=network-online.target",
+		}
+	} else {
+		dependencies = []string{}
+	}
+
 	srv, err = service.New(&program{}, &service.Config{
 		Name:        "XX Service",
 		DisplayName: "XX Service",
@@ -116,6 +137,7 @@ func init() {
 		Arguments: []string{
 			"service",
 		},
+		Dependencies: dependencies,
 	})
 
 	if err != nil {
