@@ -72,13 +72,26 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	ondemand := cmd.Flag("ondemand").Value.String() == "true"
+	system := cmd.Flag("system").Value.String() == "true"
 
 	downloadConfig(t.String())
-	if !isExecutableExist("sing-box") || !ondemand {
-		downloadBinary()
+
+	if system {
+		// find sing-box
+		_, err := exec.LookPath("sing-box")
+		if err != nil {
+			log.Fatalf("Error finding sing-box: %s", err)
+		}
+	} else {
+		if !isExecutableExist("sing-box") || !ondemand {
+			downloadBinary()
+		}
 	}
 
-	p := persist{ConfigURL: t.String()}
+	p := persist{
+		ConfigURL:           t.String(),
+		PreferSystemInstall: system,
+	}
 	err = p.save()
 	if err != nil {
 		log.Fatalf("Error saving persist: %s", err)
@@ -189,6 +202,7 @@ func init() {
 		Args:  cobra.ExactArgs(1),
 	}
 	installCmd.Flags().Bool("ondemand", true, "Only download the binary if necessary")
+	installCmd.Flags().Bool("system", false, "Prefer to find binary in the system path")
 
 	uninstallCmd := &cobra.Command{
 		Use:   "uninstall",

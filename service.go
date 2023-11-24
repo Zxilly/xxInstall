@@ -44,6 +44,23 @@ func (*program) Start(s service.Service) error {
 		return err
 	}
 
+	pe := persist{}
+	err = pe.load()
+	if err != nil {
+		return err
+	}
+
+	if pe.PreferSystemInstall {
+		BinaryFile, err = exec.LookPath("sing-box")
+		if err != nil {
+			_, lErr := logWriter.WriteString("Error finding system binary file: " + err.Error() + "\n")
+			if lErr != nil {
+				return err
+			}
+			return err
+		}
+	}
+
 	go func() {
 		logWriter.WriteString("Starting service...\n")
 

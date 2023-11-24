@@ -6,7 +6,8 @@ import (
 )
 
 type persist struct {
-	ConfigURL string `json:"config_url"`
+	ConfigURL           string `json:"config_url"`
+	PreferSystemInstall bool   `json:"prefer_system_install"`
 }
 
 func (p *persist) save() error {
