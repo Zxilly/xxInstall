@@ -120,11 +120,14 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Error loading persist: %s", err)
 	}
+
+	shouldRestart := false
 	status, err := srv.Status()
 	if err != nil {
 		log.Fatalf("Error getting service status: %s", err)
 	}
 	if status == service.StatusRunning {
+		shouldRestart = true
 		log.Println("Service is running, try to stop it...")
 		err = srv.Stop()
 		if err != nil {
@@ -133,11 +136,13 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 	}
 	downloadBinary()
 	downloadConfig(p.ConfigURL)
-	err = srv.Start()
-	if err != nil {
-		log.Fatalf("Error starting service: %s", err)
-	} else {
-		log.Println("Service started.")
+	if shouldRestart {
+		err = srv.Start()
+		if err != nil {
+			log.Fatalf("Error starting service: %s", err)
+		} else {
+			log.Println("Service started.")
+		}
 	}
 }
 
