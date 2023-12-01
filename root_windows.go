@@ -5,7 +5,6 @@ package main
 import (
 	"github.com/Microsoft/go-winio"
 	"github.com/mitchellh/go-ps"
-	"github.com/spf13/cobra"
 	"golang.org/x/sys/windows"
 	"io"
 	"log"
@@ -45,15 +44,14 @@ func init() {
 		if process.Executable() == currentExeBase {
 			// elevated process
 			runAsSender()
-			rootCmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
-
-				return nil
-			}
 		}
 
 		// do nothing
 	}
 }
+
+var senderConn net.Conn
+var shouldSend = false
 
 func runAsSender() {
 	conn, err := winio.DialPipe(logoutName, nil)
@@ -63,6 +61,9 @@ func runAsSender() {
 
 	rootCmd.SetOut(conn)
 	log.SetOutput(conn)
+
+	senderConn = conn
+	shouldSend = true
 }
 
 var listener net.Listener

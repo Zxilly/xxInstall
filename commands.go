@@ -84,7 +84,9 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		if !isExecutableExist("sing-box") || !ondemand {
-			downloadBinary()
+			prerelease := cmd.Flag("prerelease").Value.String() == "true"
+			version := cmd.Flag("version").Value.String()
+			downloadBinary(prerelease, version)
 		}
 	}
 
@@ -103,6 +105,12 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 	} else {
 		log.Println("Service installed.")
 	}
+}
+
+func downloadCmdRun(cmd *cobra.Command, args []string) {
+	prerelease := cmd.Flag("prerelease").Value.String() == "true"
+	version := cmd.Flag("version").Value.String()
+	downloadBinary(prerelease, version)
 }
 
 func uninstallCmdRun(cmd *cobra.Command, args []string) {
@@ -134,7 +142,11 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 			log.Fatalf("Error stopping service: %s", err)
 		}
 	}
-	downloadBinary()
+
+	prerelease := cmd.Flag("prerelease").Value.String() == "true"
+	version := cmd.Flag("version").Value.String()
+	downloadBinary(prerelease, version)
+
 	downloadConfig(p.ConfigURL)
 	if shouldRestart {
 		err = srv.Start()
@@ -181,6 +193,11 @@ var rootCmd = &cobra.Command{
 	Short: "do something",
 }
 
+func applyPrereleaseAndVersion(cmd *cobra.Command) {
+	cmd.Flags().BoolP("prerelease", "p", true, "Allow to install prerelease version")
+	cmd.Flags().StringP("version", "v", "", "Specify the version to install")
+}
+
 func init() {
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -208,6 +225,14 @@ func init() {
 	}
 	installCmd.Flags().Bool("ondemand", true, "Only download the binary if necessary")
 	installCmd.Flags().Bool("system", false, "Prefer to find binary in the system path")
+	applyPrereleaseAndVersion(installCmd)
+
+	downloadCmd := &cobra.Command{
+		Use:   "download",
+		Short: "Download the program",
+		Run:   downloadCmdRun,
+	}
+	applyPrereleaseAndVersion(downloadCmd)
 
 	uninstallCmd := &cobra.Command{
 		Use:   "uninstall",
@@ -220,6 +245,7 @@ func init() {
 		Short: "Update the xx",
 		Run:   updateCmdRun,
 	}
+	applyPrereleaseAndVersion(updateCmd)
 
 	upgradeCmd := &cobra.Command{
 		Use:   "upgrade",
@@ -239,5 +265,5 @@ func init() {
 		Run:   statusCmdRun,
 	}
 
-	rootCmd.AddCommand(startCmd, stopCmd, restartCmd, installCmd, uninstallCmd, updateCmd, upgradeCmd, serviceCmd, statusCmd)
+	rootCmd.AddCommand(startCmd, stopCmd, restartCmd, installCmd, uninstallCmd, updateCmd, upgradeCmd, serviceCmd, statusCmd, downloadCmd)
 }

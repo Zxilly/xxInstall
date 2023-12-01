@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
 var WorkDir string
@@ -28,7 +29,7 @@ func init() {
 
 	ConfigFile = WorkDir + string(os.PathSeparator) + "config.json"
 
-	LogFile = WorkDir + string(os.PathSeparator) + "xx.log"
+	LogFile = WorkDir + string(os.PathSeparator) + "xx-" + time.Now().Format(time.DateOnly) + ".log"
 
 	PersistFile = WorkDir + string(os.PathSeparator) + "persist.json"
 

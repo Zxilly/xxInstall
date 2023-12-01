@@ -6,19 +6,23 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v56/github"
 )
 
 var githubClient = github.NewClient(nil)
 
-func downloadBinary() {
+func downloadBinary(prerelease bool, version string) {
+	log.Println("Getting releases")
 	releases, _, err := githubClient.Repositories.ListReleases(
 		context.Background(),
 		"SagerNet",
@@ -29,11 +33,38 @@ func downloadBinary() {
 	if err != nil {
 		log.Fatalf("Error getting releases: %s", err)
 	}
+	log.Println("Got releases")
 
-	latestRelease := releases[0]
-	for _, release := range releases {
-		if release.GetPublishedAt().After(latestRelease.GetPublishedAt().Time) {
-			latestRelease = release
+	var latestRelease *github.RepositoryRelease
+
+	if version != "" {
+		for _, release := range releases {
+			if release.GetTagName() == version {
+				if release.GetPrerelease() && !prerelease {
+					log.Fatalf("Version %s is a prerelease, use --prerelease to download", version)
+				}
+
+				latestRelease = release
+				break
+			}
+		}
+		if latestRelease == nil {
+			log.Fatalf("No release found for version %s", version)
+		}
+	} else {
+		for _, release := range releases {
+			if release.GetPrerelease() && !prerelease {
+				continue
+			}
+			if latestRelease == nil {
+				latestRelease = release
+			} else if release.GetPublishedAt().After(latestRelease.GetPublishedAt().Time) {
+				latestRelease = release
+			}
+		}
+
+		if latestRelease == nil {
+			log.Fatalf("No release found")
 		}
 	}
 
@@ -76,16 +107,43 @@ func downloadBinary() {
 	}
 
 	defer resp.Body.Close()
-	content, err := io.ReadAll(resp.Body)
+
+	buf := new(bytes.Buffer)
+
+	barOptions := []progressbar.Option{
+		progressbar.OptionSetDescription("downloading"),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(10),
+		progressbar.OptionThrottle(65 * time.Millisecond),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSpinnerType(14),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetRenderBlankState(true),
+	}
+	if shouldSend {
+		barOptions = append(barOptions, progressbar.OptionSetWriter(senderConn))
+		barOptions = append(barOptions, progressbar.OptionOnCompletion(func() {
+			_, _ = fmt.Fprint(senderConn, "\n")
+		}))
+	} else {
+		barOptions = append(barOptions, progressbar.OptionSetWriter(os.Stdout))
+		barOptions = append(barOptions, progressbar.OptionOnCompletion(func() {
+			_, _ = fmt.Fprint(os.Stdout, "\n")
+		}))
+	}
+
+	bar := progressbar.NewOptions64(resp.ContentLength, barOptions...)
+
+	_, err = io.Copy(io.MultiWriter(buf, bar), resp.Body)
 	if err != nil {
 		log.Fatalf("Error reading asset: %s", err)
 	}
-	log.Println("Downloaded asset")
 
-	extractCompressedFile(content)
+	extractCompressedFile(buf.Bytes())
 }
 
 func extractCompressedFile(fileByte []byte) {
+	defer log.Println("Extracted asset")
 	if runtime.GOOS == "windows" {
 		zipReader, err := zip.NewReader(bytes.NewReader(fileByte), int64(len(fileByte)))
 		if err != nil {
@@ -115,6 +173,7 @@ func extractCompressedFile(fileByte []byte) {
 				if err != nil {
 					log.Fatalf("Error chmod file: %s", err)
 				}
+				return
 			}
 		}
 	} else {
@@ -149,10 +208,10 @@ func extractCompressedFile(fileByte []byte) {
 				if err != nil {
 					log.Fatalf("Error chmod file: %s", err)
 				}
+				return
 			}
 		}
 	}
-	log.Println("Extracted asset")
 }
 
 func downloadConfig(u string) {
