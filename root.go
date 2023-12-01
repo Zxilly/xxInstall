@@ -8,6 +8,9 @@ import (
 	"os/user"
 )
 
+var senderConn net.Conn
+var shouldSend = false
+
 func init() {
 	if !isRoot() {
 		log.Fatalf("Please run as root.")
