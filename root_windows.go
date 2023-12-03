@@ -19,13 +19,7 @@ const pipeBase = `\\.\pipe\`
 
 const logoutName = pipeBase + "XXLogOutput"
 
-func init() {
-	for _, arg := range os.Args {
-		if arg == "service" {
-			return
-		}
-	}
-
+func requireRoot() {
 	if !isRoot() {
 		initServer()
 		runMeElevated()

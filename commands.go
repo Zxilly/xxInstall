@@ -10,6 +10,7 @@ import (
 )
 
 func startCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	err := srv.Start()
 	if err != nil {
 		log.Fatalf("Error starting service: %s", err)
@@ -19,6 +20,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func stopCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	err := srv.Stop()
 	if err != nil {
 		log.Fatalf("Error stopping service: %s", err)
@@ -28,6 +30,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func restartCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	err := srv.Restart()
 	if err != nil {
 		log.Fatalf("Error restarting service: %s", err)
@@ -50,6 +53,7 @@ func statusToString(status service.Status) string {
 }
 
 func statusCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	status, err := srv.Status()
 	if err != nil {
 		log.Fatalf("Error getting service status: %s", err)
@@ -59,6 +63,7 @@ func statusCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func installCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	if len(args) < 1 {
 		log.Println("Please specify an url for install.")
 		return
@@ -114,6 +119,7 @@ func downloadCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func uninstallCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	err := srv.Uninstall()
 	if err != nil {
 		log.Fatalf("Error uninstalling service: %s", err)
@@ -123,6 +129,7 @@ func uninstallCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func updateCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	p := persist{}
 	err := p.load()
 	if err != nil {
@@ -166,6 +173,7 @@ func upgradeCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func serviceCmdRun(cmd *cobra.Command, args []string) {
+	requireRoot()
 	err := srv.Run()
 	if err != nil {
 		log.Fatalf("Error running service: %s", err)

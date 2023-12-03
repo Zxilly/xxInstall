@@ -12,7 +12,7 @@ import (
 var senderConn net.Conn
 var shouldSend = false
 
-func init() {
+func requireRoot() {
 	if !isRoot() {
 		log.Fatalf("Please run as root.")
 	}
