@@ -59,7 +59,18 @@ func statusCmdRun(cmd *cobra.Command, args []string) {
 		log.Fatalf("Error getting service status: %s", err)
 	}
 	log.Printf("Service status: %s", statusToString(status))
+}
 
+func syncCmdRun(command *cobra.Command, args []string) {
+	p := persist{}
+	err := p.load()
+	if err != nil {
+		log.Fatalf("Error loading persist: %s", err)
+	}
+	if p.ConfigURL == "" {
+		log.Fatalf("No config url found")
+	}
+	downloadConfig(p.ConfigURL)
 }
 
 func installCmdRun(cmd *cobra.Command, args []string) {
@@ -112,12 +123,6 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func downloadCmdRun(cmd *cobra.Command, args []string) {
-	prerelease := cmd.Flag("prerelease").Value.String() == "true"
-	version := cmd.Flag("version").Value.String()
-	downloadBinary(prerelease, version)
-}
-
 func uninstallCmdRun(cmd *cobra.Command, args []string) {
 	requireRoot()
 	err := srv.Uninstall()
@@ -154,7 +159,6 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 	version := cmd.Flag("version").Value.String()
 	downloadBinary(prerelease, version)
 
-	downloadConfig(p.ConfigURL)
 	if shouldRestart {
 		err = srv.Start()
 		if err != nil {
@@ -235,13 +239,6 @@ func init() {
 	installCmd.Flags().Bool("system", false, "Prefer to find binary in the system path")
 	applyPrereleaseAndVersion(installCmd)
 
-	downloadCmd := &cobra.Command{
-		Use:   "download",
-		Short: "Download the program",
-		Run:   downloadCmdRun,
-	}
-	applyPrereleaseAndVersion(downloadCmd)
-
 	uninstallCmd := &cobra.Command{
 		Use:   "uninstall",
 		Short: "Uninstall the xx",
@@ -273,5 +270,21 @@ func init() {
 		Run:   statusCmdRun,
 	}
 
-	rootCmd.AddCommand(startCmd, stopCmd, restartCmd, installCmd, uninstallCmd, updateCmd, upgradeCmd, serviceCmd, statusCmd, downloadCmd)
+	syncCmd := &cobra.Command{
+		Use:   "sync",
+		Short: "Sync the config",
+		Run:   syncCmdRun,
+	}
+
+	rootCmd.AddCommand(
+		startCmd,
+		stopCmd,
+		restartCmd,
+		installCmd,
+		uninstallCmd,
+		updateCmd,
+		upgradeCmd,
+		serviceCmd,
+		statusCmd,
+		syncCmd)
 }
