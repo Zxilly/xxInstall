@@ -143,6 +143,24 @@ func downloadBinary(prerelease bool, version string) {
 }
 
 func extractCompressedFile(fileByte []byte) {
+	writeToFile := func(r io.Reader) {
+		targetFile, err := os.Create(BinaryFile)
+		defer targetFile.Close()
+		if err != nil {
+			log.Fatalf("Error creating file: %s", err)
+		}
+
+		_, err = io.Copy(targetFile, r)
+		if err != nil {
+			log.Fatalf("Error copying file: %s", err)
+		}
+
+		err = targetFile.Chmod(0755)
+		if err != nil {
+			log.Fatalf("Error chmod file: %s", err)
+		}
+	}
+
 	defer log.Println("Extracted asset")
 	if runtime.GOOS == "windows" {
 		zipReader, err := zip.NewReader(bytes.NewReader(fileByte), int64(len(fileByte)))
@@ -156,23 +174,9 @@ func extractCompressedFile(fileByte []byte) {
 				if err != nil {
 					log.Fatalf("Error opening file: %s", err)
 				}
-				defer fo.Close()
 
-				file, err := os.Create(BinaryFile)
-				if err != nil {
-					log.Fatalf("Error creating file: %s", err)
-				}
-				defer file.Close()
-
-				_, err = io.Copy(file, fo)
-				if err != nil {
-					log.Fatalf("Error copying file: %s", err)
-				}
-
-				err = file.Chmod(0755)
-				if err != nil {
-					log.Fatalf("Error chmod file: %s", err)
-				}
+				writeToFile(fo)
+				fo.Close()
 				return
 			}
 		}
@@ -193,21 +197,7 @@ func extractCompressedFile(fileByte []byte) {
 			}
 
 			if strings.HasPrefix(header.Name, "sing-box") {
-				file, err := os.Create(BinaryFile)
-				if err != nil {
-					log.Fatalf("Error creating file: %s", err)
-				}
-				defer file.Close()
-
-				_, err = io.Copy(file, tarReader)
-				if err != nil {
-					log.Fatalf("Error copying file: %s", err)
-				}
-
-				err = file.Chmod(0755)
-				if err != nil {
-					log.Fatalf("Error chmod file: %s", err)
-				}
+				writeToFile(tarReader)
 				return
 			}
 		}
