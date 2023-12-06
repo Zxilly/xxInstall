@@ -62,8 +62,25 @@ func statusCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func syncCmdRun(command *cobra.Command, args []string) {
+	requireRoot()
+
+	state, err := srv.Status()
+	if err != nil {
+		log.Fatalf("Error getting service status: %s", err)
+	}
+
+	shouldRestart := false
+	if state == service.StatusRunning {
+		err = srv.Stop()
+		if err != nil {
+			log.Fatalf("Error stopping service: %s", err)
+		}
+		log.Println("Service stopped.")
+		shouldRestart = true
+	}
+
 	p := persist{}
-	err := p.load()
+	err = p.load()
 	if err != nil {
 		log.Fatalf("Error loading persist: %s", err)
 	}
@@ -71,6 +88,15 @@ func syncCmdRun(command *cobra.Command, args []string) {
 		log.Fatalf("No config url found")
 	}
 	downloadConfig(p.ConfigURL)
+
+	if shouldRestart {
+		err = srv.Start()
+		if err != nil {
+			log.Fatalf("Error starting service: %s", err)
+		} else {
+			log.Println("Service started.")
+		}
+	}
 }
 
 func installCmdRun(cmd *cobra.Command, args []string) {
