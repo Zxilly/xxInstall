@@ -70,12 +70,7 @@ func applySelfUpdate(mirror bool) {
 		extension = ".tar.gz"
 	}
 
-	var suffix string
-	if goarch == "amd64" {
-		suffix = goos + "_" + goarch + "_v1" + extension
-	} else {
-		suffix = goos + "_" + goarch + extension
-	}
+	suffix := goos + "_" + goarch + extension
 
 	var target *github.ReleaseAsset
 	for _, asset := range assets {
@@ -104,7 +99,12 @@ func applySelfUpdate(mirror bool) {
 		log.Fatalf("Error downloading asset: %s", err)
 	}
 
-	err = selfupdate.Apply(bytes.NewReader(buf), selfupdate.Options{})
+	r, err := extractCompressedFile(buf, "xx")
+	if err != nil {
+		log.Fatalf("Error extracting file: %s", err)
+	}
+
+	err = selfupdate.Apply(r, selfupdate.Options{})
 	if err != nil {
 		err = selfupdate.RollbackError(err)
 		if err != nil {
