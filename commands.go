@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/url"
 	"os/exec"
-	"runtime"
 )
 
 func startCmdRun(cmd *cobra.Command, args []string) {
@@ -128,7 +127,8 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 		if !isExecutableExist("sing-box") || !ondemand {
 			prerelease := cmd.Flag("prerelease").Value.String() == "true"
 			version := cmd.Flag("version").Value.String()
-			downloadBinary(prerelease, version)
+			mirror := cmd.Flag("mirror").Value.String() == "true"
+			downloadBinary(prerelease, version, mirror)
 		}
 	}
 
@@ -183,9 +183,11 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 
 	prerelease := cmd.Flag("prerelease").Value.String() == "true"
 	version := cmd.Flag("version").Value.String()
-	downloadBinary(prerelease, version)
+	mirror := cmd.Flag("mirror").Value.String() == "true"
+	downloadBinary(prerelease, version, mirror)
 
 	if shouldRestart {
+		log.Println("Try to restart service")
 		err = srv.Start()
 		if err != nil {
 			log.Fatalf("Error starting service: %s", err)
@@ -196,9 +198,34 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 }
 
 func upgradeCmdRun(cmd *cobra.Command, args []string) {
-	err := openBrowser("https://github.com/Zxilly/xxInstall/releases")
+	requireRoot()
+
+	status, err := srv.Status()
 	if err != nil {
-		log.Fatalf("Error opening browser: %s", err)
+		log.Fatalf("Error getting service status: %s", err)
+	}
+
+	shouldRestart := false
+	if status == service.StatusRunning {
+		shouldRestart = true
+		log.Println("Service is running, try to stop it...")
+		err = srv.Stop()
+		if err != nil {
+			log.Fatalf("Error stopping service: %s", err)
+		}
+	}
+
+	mirror := cmd.Flag("mirror").Value.String() == "true"
+	applySelfUpdate(mirror)
+
+	if shouldRestart {
+		log.Println("Try to restart service")
+		err = srv.Start()
+		if err != nil {
+			log.Fatalf("Error starting service: %s", err)
+		} else {
+			log.Println("Service started.")
+		}
 	}
 }
 
@@ -211,29 +238,19 @@ func serviceCmdRun(cmd *cobra.Command, args []string) {
 	return
 }
 
-func openBrowser(url string) error {
-	var cmd *exec.Cmd
-
-	switch os := runtime.GOOS; os {
-	case "darwin":
-		cmd = exec.Command("open", url)
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "start", url)
-	default:
-		cmd = exec.Command("xdg-open", url)
-	}
-
-	return cmd.Start()
-}
-
 var rootCmd = &cobra.Command{
 	Use:   "xx",
 	Short: "do something",
 }
 
-func applyPrereleaseAndVersion(cmd *cobra.Command) {
+func applyDownloadFlag(cmd *cobra.Command) {
 	cmd.Flags().BoolP("prerelease", "p", true, "Allow to install prerelease version")
 	cmd.Flags().StringP("version", "v", "", "Specify the version to install")
+	applyMirrorFlag(cmd)
+}
+
+func applyMirrorFlag(cmd *cobra.Command) {
+	cmd.Flags().BoolP("mirror", "m", false, "Use mirror to download")
 }
 
 func init() {
@@ -263,7 +280,7 @@ func init() {
 	}
 	installCmd.Flags().Bool("ondemand", true, "Only download the binary if necessary")
 	installCmd.Flags().Bool("system", false, "Prefer to find binary in the system path")
-	applyPrereleaseAndVersion(installCmd)
+	applyDownloadFlag(installCmd)
 
 	uninstallCmd := &cobra.Command{
 		Use:   "uninstall",
@@ -276,13 +293,14 @@ func init() {
 		Short: "Update the xx",
 		Run:   updateCmdRun,
 	}
-	applyPrereleaseAndVersion(updateCmd)
+	applyDownloadFlag(updateCmd)
 
 	upgradeCmd := &cobra.Command{
 		Use:   "upgrade",
 		Short: "Upgrade the program itself",
 		Run:   upgradeCmdRun,
 	}
+	applyMirrorFlag(upgradeCmd)
 
 	serviceCmd := &cobra.Command{
 		Use:    "service",

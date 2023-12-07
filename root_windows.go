@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const pipeBase = `\\.\pipe\`
@@ -38,6 +39,19 @@ func requireRoot() {
 		if process.Executable() == currentExeBase {
 			// elevated process
 			runAsSender()
+
+			go func() {
+				parent := os.Getppid()
+				for {
+					pp, err := ps.FindProcess(parent)
+					if pp == nil && err == nil {
+						// parent process is gone
+						senderConn.Close()
+						os.Exit(0)
+					}
+					time.Sleep(1 * time.Second)
+				}
+			}()
 		}
 
 		// do nothing
