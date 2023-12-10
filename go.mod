@@ -2,8 +2,6 @@ module xx
 
 go 1.21
 
-require github.com/kardianos/service v1.2.2
-
 require (
 	aead.dev/minisign v0.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -20,6 +18,7 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/google/go-github/v56 v56.0.0
+	github.com/kardianos/service v1.2.2
 	github.com/melbahja/got v0.7.0
 	github.com/minio/selfupdate v0.6.0
 	github.com/mitchellh/go-ps v1.0.0

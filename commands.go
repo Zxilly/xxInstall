@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"github.com/kardianos/service"
 	"github.com/spf13/cobra"
+	"io"
 	"log"
 	"net/url"
+	"os"
 	"os/exec"
+	"time"
 )
 
 func startCmdRun(cmd *cobra.Command, args []string) {
@@ -149,6 +153,56 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
+func logCmdRun(cmd *cobra.Command, args []string) {
+	// check LogFile
+	_, err := os.Stat(LogFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("Log file %s not exist", LogFile)
+		} else {
+			log.Fatalf("Error checking log file: %s", err)
+		}
+	}
+
+	// read the last 10 lines
+	file, err := os.Open(LogFile)
+	if err != nil {
+		log.Fatalf("Error opening log file: %s", err)
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		log.Fatalf("Error getting log file info: %s", err)
+	}
+
+	size := fileInfo.Size()
+	reader := bufio.NewReader(file)
+
+	for {
+		_, err := file.Seek(size, io.SeekStart)
+		if err != nil {
+			log.Fatalf("Error seeking log file: %s", err)
+		}
+
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			log.Print(line)
+		}
+
+		fileInfo, err := file.Stat()
+		if err != nil {
+			log.Fatalf("Error getting log file info: %s", err)
+		}
+		size = fileInfo.Size()
+
+		time.Sleep(1 * time.Second)
+	}
+}
+
 func uninstallCmdRun(cmd *cobra.Command, args []string) {
 	requireRoot()
 	err := srv.Uninstall()
@@ -282,6 +336,12 @@ func init() {
 	installCmd.Flags().Bool("system", false, "Prefer to find binary in the system path")
 	applyDownloadFlag(installCmd)
 
+	logCmd := &cobra.Command{
+		Use:   "log",
+		Short: "Show the log",
+		Run:   logCmdRun,
+	}
+
 	uninstallCmd := &cobra.Command{
 		Use:   "uninstall",
 		Short: "Uninstall the xx",
@@ -325,6 +385,7 @@ func init() {
 		stopCmd,
 		restartCmd,
 		installCmd,
+		logCmd,
 		uninstallCmd,
 		updateCmd,
 		upgradeCmd,
