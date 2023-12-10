@@ -171,13 +171,28 @@ func logCmdRun(cmd *cobra.Command, args []string) {
 	}
 	defer file.Close()
 
+	reader := bufio.NewReader(file)
+	var lines []string
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		lines = append(lines, line)
+		if len(lines) > 20 {
+			lines = lines[1:]
+		}
+	}
+	for _, line := range lines {
+		log.Print(line)
+	}
+
 	fileInfo, err := file.Stat()
 	if err != nil {
 		log.Fatalf("Error getting log file info: %s", err)
 	}
 
 	size := fileInfo.Size()
-	reader := bufio.NewReader(file)
 
 	for {
 		_, err := file.Seek(size, io.SeekStart)
