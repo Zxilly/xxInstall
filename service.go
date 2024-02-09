@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var cmd *exec.Cmd
+var runningCmd *exec.Cmd
 
 type program struct{}
 
@@ -64,21 +64,21 @@ func (*program) Start(s service.Service) error {
 	go func() {
 		logWriter.WriteString("Starting service...\n")
 
-		cmd = exec.Command(BinaryFile, "run", "-c", absConfig, "-D", absWorkDir, "--disable-color")
+		runningCmd = exec.Command(BinaryFile, "run", "-c", absConfig, "-D", absWorkDir, "--disable-color")
 
-		cmd.Stdout = logWriter
-		cmd.Stderr = logWriter
+		runningCmd.Stdout = logWriter
+		runningCmd.Stderr = logWriter
 
-		addHideWindow(cmd)
+		addHideWindow(runningCmd)
 		logWriter.WriteString("Starting process...\n")
-		err = cmd.Start()
+		err = runningCmd.Start()
 		logWriter.WriteString("Process started...\n")
 		if err != nil {
 			logger.Infof("Error starting process: %s", err)
 			return
 		}
 		logWriter.WriteString("Waiting process...\n")
-		err = cmd.Wait()
+		err = runningCmd.Wait()
 		logWriter.WriteString("Process finished...\n")
 		if err != nil {
 			logger.Infof("Error waiting process: %s", err)
@@ -95,24 +95,24 @@ func (*program) Start(s service.Service) error {
 }
 
 func (*program) Stop(s service.Service) error {
-	if cmd != nil {
+	if runningCmd != nil {
 		if runtime.GOOS == "windows" {
-			return cmd.Process.Kill()
+			return runningCmd.Process.Kill()
 		} else {
-			err := cmd.Process.Signal(os.Interrupt)
+			err := runningCmd.Process.Signal(os.Interrupt)
 			if err != nil {
 				return err
 			}
 			go func() {
 				<-time.After(5 * time.Second)
-				err := cmd.Process.Kill()
+				err := runningCmd.Process.Kill()
 				if err != nil {
 					log.Println("Error killing process: ", err)
 					return
 				}
 			}()
 
-			state, err := cmd.Process.Wait()
+			state, err := runningCmd.Process.Wait()
 			if err != nil {
 				log.Println("Error waiting process: ", err)
 				return err
@@ -134,16 +134,17 @@ func init() {
 	var err error
 
 	var dependencies []string
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		dependencies = []string{
 			"LanmanServer",
 		}
-	} else if runtime.GOOS == "linux" {
+	case "linux":
 		dependencies = []string{
 			"Wants=network-online.target",
 			"After=network-online.target",
 		}
-	} else {
+	default:
 		dependencies = []string{}
 	}
 

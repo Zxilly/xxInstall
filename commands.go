@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func startCmdRun(cmd *cobra.Command, args []string) {
+func startCmdRun(*cobra.Command, []string) {
 	requireRoot()
 	err := srv.Start()
 	if err != nil {
@@ -22,7 +22,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func stopCmdRun(cmd *cobra.Command, args []string) {
+func stopCmdRun(*cobra.Command, []string) {
 	requireRoot()
 	err := srv.Stop()
 	if err != nil {
@@ -32,7 +32,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func restartCmdRun(cmd *cobra.Command, args []string) {
+func restartCmdRun(*cobra.Command, []string) {
 	requireRoot()
 	err := srv.Restart()
 	if err != nil {
@@ -55,7 +55,7 @@ func statusToString(status service.Status) string {
 	}
 }
 
-func statusCmdRun(cmd *cobra.Command, args []string) {
+func statusCmdRun(*cobra.Command, []string) {
 	requireRoot()
 	status, err := srv.Status()
 	if err != nil {
@@ -64,7 +64,7 @@ func statusCmdRun(cmd *cobra.Command, args []string) {
 	log.Printf("Service status: %s", statusToString(status))
 }
 
-func syncCmdRun(command *cobra.Command, args []string) {
+func syncCmdRun(*cobra.Command, []string) {
 	requireRoot()
 
 	state, err := srv.Status()
@@ -100,6 +100,15 @@ func syncCmdRun(command *cobra.Command, args []string) {
 			log.Println("Service started.")
 		}
 	}
+}
+
+func versionCmdRun(_ *cobra.Command, _ []string) {
+	cmd := exec.Command(BinaryFile, "version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("Error getting version: %s", err)
+	}
+	log.Print(string(output))
 }
 
 func installCmdRun(cmd *cobra.Command, args []string) {
@@ -153,7 +162,7 @@ func installCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func logCmdRun(cmd *cobra.Command, args []string) {
+func logCmdRun(*cobra.Command, []string) {
 	// check LogFile
 	_, err := os.Stat(LogFile)
 	if err != nil {
@@ -218,7 +227,7 @@ func logCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func uninstallCmdRun(cmd *cobra.Command, args []string) {
+func uninstallCmdRun(*cobra.Command, []string) {
 	requireRoot()
 	err := srv.Uninstall()
 	if err != nil {
@@ -228,7 +237,7 @@ func uninstallCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func updateCmdRun(cmd *cobra.Command, args []string) {
+func updateCmdRun(cmd *cobra.Command, _ []string) {
 	requireRoot()
 	p := persist{}
 	err := p.load()
@@ -266,7 +275,7 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func upgradeCmdRun(cmd *cobra.Command, args []string) {
+func upgradeCmdRun(cmd *cobra.Command, _ []string) {
 	requireRoot()
 
 	status, err := srv.Status()
@@ -298,7 +307,7 @@ func upgradeCmdRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func serviceCmdRun(cmd *cobra.Command, args []string) {
+func serviceCmdRun(*cobra.Command, []string) {
 	requireRoot()
 	err := srv.Run()
 	if err != nil {
@@ -395,6 +404,12 @@ func init() {
 		Run:   syncCmdRun,
 	}
 
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "print the internal version",
+		Run:   versionCmdRun,
+	}
+
 	rootCmd.AddCommand(
 		startCmd,
 		stopCmd,
@@ -406,5 +421,7 @@ func init() {
 		upgradeCmd,
 		serviceCmd,
 		statusCmd,
-		syncCmd)
+		syncCmd,
+		versionCmd,
+	)
 }
