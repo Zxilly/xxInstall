@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/kardianos/service"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"os"
 	"os/exec"
@@ -17,30 +18,29 @@ type program struct{}
 //goland:noinspection GoUnhandledErrorResult
 func (*program) Start(s service.Service) error {
 	logger, err := s.Logger(nil)
-	logWriter, err := os.OpenFile(LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Error opening log file: %s", err)
 	}
+	logWriter := &lumberjack.Logger{
+		Filename:   LogFile,
+		MaxSize:    20,
+		MaxBackups: 3,
+		MaxAge:     28,
+	}
+	log.SetOutput(logWriter)
 
-	if err != nil {
-		return err
+	logBoth := func(format string, v ...interface{}) {
+		log.Printf(format, v...)
+		logger.Infof(format, v...)
 	}
 
-	absConfig, err := filepath.Abs(ConfigFile)
 	if err != nil {
-		_, err = logWriter.WriteString("Error getting absolute path of config file: " + err.Error() + "\n")
-		if err != nil {
-			return err
-		}
 		return err
 	}
 
 	absWorkDir, err := filepath.Abs(WorkDir)
 	if err != nil {
-		_, err = logWriter.WriteString("Error getting absolute path of work dir: " + err.Error() + "\n")
-		if err != nil {
-			return err
-		}
+		logBoth("Error getting absolute path of work directory: %s", err)
 		return err
 	}
 
@@ -53,40 +53,37 @@ func (*program) Start(s service.Service) error {
 	if pe.PreferSystemInstall {
 		BinaryFile, err = exec.LookPath("sing-box")
 		if err != nil {
-			_, lErr := logWriter.WriteString("Error finding system binary file: " + err.Error() + "\n")
-			if lErr != nil {
-				return err
-			}
+			logBoth("Error getting system installed binary: %s", err)
 			return err
 		}
 	}
 
 	go func() {
-		logWriter.WriteString("Starting service...\n")
+		logBoth("Starting service...")
 
-		runningCmd = exec.Command(BinaryFile, "run", "-c", absConfig, "-D", absWorkDir, "--disable-color")
+		cmd = exec.Command(BinaryFile, "run", "-c", ConfigFile, "-D", absWorkDir, "--disable-color")
 
-		runningCmd.Stdout = logWriter
-		runningCmd.Stderr = logWriter
+		cmd.Stdout = logWriter
+		cmd.Stderr = logWriter
 
-		addHideWindow(runningCmd)
-		logWriter.WriteString("Starting process...\n")
-		err = runningCmd.Start()
-		logWriter.WriteString("Process started...\n")
+		addHideWindow(cmd)
+		logBoth("Starting process...")
+		err = cmd.Start()
+		logBoth("Process started...")
 		if err != nil {
-			logger.Infof("Error starting process: %s", err)
+			logBoth("Error starting process: %s", err)
 			return
 		}
-		logWriter.WriteString("Waiting process...\n")
-		err = runningCmd.Wait()
-		logWriter.WriteString("Process finished...\n")
+		logBoth("Waiting process...")
+		err = cmd.Wait()
+		logBoth("Process finished...")
 		if err != nil {
 			logger.Infof("Error waiting process: %s", err)
 			return
 		}
 		err = s.Stop()
 		if err != nil {
-			logWriter.WriteString("Error stopping service: " + err.Error() + "\n")
+			logBoth("Error stopping service: %s", err)
 			return
 		}
 	}()

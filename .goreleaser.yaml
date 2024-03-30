@@ -9,16 +9,26 @@ before:
 builds:
   - binary: xx
     ldflags:
-        - -s -w
+        - "-s -w"
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     goos:
       - linux
-      - windows
       - darwin
+      - windows
     goarch:
       - amd64
-      - arm64
+    flags: -trimpath
+#  - binary: xx
+#    ldflags:
+#        - "-H=windowsgui -s -w"
+#    env:
+#      - CGO_ENABLED=1
+#    goos:
+#      - windows
+#    goarch:
+#      - amd64
+#    flags: -trimpath
 
 archives:
   - format: tar.gz

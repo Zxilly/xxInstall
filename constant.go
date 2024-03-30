@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"time"
 )
 
 var WorkDir string
@@ -20,23 +19,24 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	WorkDir = filepath.Join(filepath.Dir(executable), "prog")
+	baseDir := filepath.Dir(executable)
+	WorkDir = filepath.Join(baseDir, "prog")
 
 	err = os.MkdirAll(WorkDir, 0755)
 	if err != nil {
 		panic(err)
 	}
 
-	ConfigFile = filepath.Join(WorkDir, "config.json")
+	//ConfigFile = WorkDir + string(os.PathSeparator) + "config.json"
+	ConfigFile = filepath.Join(baseDir, "config", "config.json")
 
-	LogFile = filepath.Join(WorkDir, "xx-"+time.Now().Format(time.DateOnly)+".log")
+	LogFile = filepath.Join(baseDir, "logs", "log.txt")
 
-	PersistFile = filepath.Join(WorkDir, "persist.json")
+	PersistFile = filepath.Join(baseDir, "config", "persist.json")
 
-	switch runtime.GOOS {
-	case "windows":
+	if runtime.GOOS == "windows" {
 		BinaryFile = filepath.Join(WorkDir, "sing-box.exe")
-	default:
+	} else {
 		BinaryFile = filepath.Join(WorkDir, "sing-box")
 	}
 }
