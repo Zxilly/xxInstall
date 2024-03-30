@@ -61,21 +61,21 @@ func (*program) Start(s service.Service) error {
 	go func() {
 		logBoth("Starting service...")
 
-		cmd = exec.Command(BinaryFile, "run", "-c", ConfigFile, "-D", absWorkDir, "--disable-color")
+		runningCmd = exec.Command(BinaryFile, "run", "-c", ConfigFile, "-D", absWorkDir, "--disable-color")
 
-		cmd.Stdout = logWriter
-		cmd.Stderr = logWriter
+		runningCmd.Stdout = logWriter
+		runningCmd.Stderr = logWriter
 
-		addHideWindow(cmd)
+		addHideWindow(runningCmd)
 		logBoth("Starting process...")
-		err = cmd.Start()
+		err = runningCmd.Start()
 		logBoth("Process started...")
 		if err != nil {
 			logBoth("Error starting process: %s", err)
 			return
 		}
 		logBoth("Waiting process...")
-		err = cmd.Wait()
+		err = runningCmd.Wait()
 		logBoth("Process finished...")
 		if err != nil {
 			logger.Infof("Error waiting process: %s", err)
