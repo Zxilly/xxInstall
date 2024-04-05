@@ -27,7 +27,6 @@ func init() {
 		panic(err)
 	}
 
-	//ConfigFile = WorkDir + string(os.PathSeparator) + "config.json"
 	ConfigFile = filepath.Join(baseDir, "config", "config.json")
 
 	LogFile = filepath.Join(baseDir, "logs", "log.txt")
@@ -39,4 +38,16 @@ func init() {
 	} else {
 		BinaryFile = filepath.Join(WorkDir, "sing-box")
 	}
+
+	for _, file := range []string{ConfigFile, LogFile, PersistFile} {
+		err := createDirOnDemand(file)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func createDirOnDemand(file string) error {
+	dir := filepath.Dir(file)
+	return os.MkdirAll(dir, 0755)
 }
