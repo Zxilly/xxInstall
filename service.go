@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/kardianos/service"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/kardianos/service"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var runningCmd *exec.Cmd
@@ -32,10 +33,6 @@ func (*program) Start(s service.Service) error {
 	logBoth := func(format string, v ...interface{}) {
 		log.Printf(format, v...)
 		logger.Infof(format, v...)
-	}
-
-	if err != nil {
-		return err
 	}
 
 	absWorkDir, err := filepath.Abs(WorkDir)

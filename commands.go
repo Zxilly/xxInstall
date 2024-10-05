@@ -2,14 +2,15 @@ package main
 
 import (
 	"bufio"
-	"github.com/kardianos/service"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"net/url"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/kardianos/service"
+	"github.com/spf13/cobra"
 )
 
 func startCmdRun(*cobra.Command, []string) {

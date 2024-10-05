@@ -3,9 +3,6 @@
 package main
 
 import (
-	"github.com/Microsoft/go-winio"
-	"github.com/mitchellh/go-ps"
-	"golang.org/x/sys/windows"
 	"io"
 	"log"
 	"net"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/Microsoft/go-winio"
+	"github.com/mitchellh/go-ps"
+	"golang.org/x/sys/windows"
 )
 
 const pipeBase = `\\.\pipe\`
