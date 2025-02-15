@@ -23,7 +23,7 @@ import (
 
 var githubClient = github.NewClient(nil)
 
-const MirrorUrl = "https://mirror.ghproxy.com/"
+const MirrorUrl = "https://acc.zxilly.dev/"
 
 func applySelfUpdate(mirror bool) {
 	log.Println("Getting releases")
@@ -155,10 +155,10 @@ func downloadWithProgressBar(url string) ([]byte, error) {
 	}
 
 	tmpFile, err := os.CreateTemp(os.TempDir(), "xx")
-	defer os.Remove(tmpFile.Name())
 	if err != nil {
 		return nil, err
 	}
+	defer os.Remove(tmpFile.Name())
 
 	err = g.Do(&got.Download{
 		Concurrency: 16,
