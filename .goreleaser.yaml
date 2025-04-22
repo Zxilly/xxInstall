@@ -19,16 +19,6 @@ builds:
     goarch:
       - amd64
     flags: -trimpath
-#  - binary: xx
-#    ldflags:
-#        - "-H=windowsgui -s -w"
-#    env:
-#      - CGO_ENABLED=1
-#    goos:
-#      - windows
-#    goarch:
-#      - amd64
-#    flags: -trimpath
 
 archives:
   - format: tar.gz

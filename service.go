@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	"github.com/kardianos/service"
@@ -15,6 +16,8 @@ import (
 var runningCmd *exec.Cmd
 
 type program struct{}
+
+var exiting = atomic.Bool{}
 
 //goland:noinspection GoUnhandledErrorResult
 func (*program) Start(s service.Service) error {
@@ -55,22 +58,29 @@ func (*program) Start(s service.Service) error {
 		}
 	}
 
+	logBoth("Starting service...")
+
+	runningCmd = exec.Command(BinaryFile, "run", "-c", ConfigFile, "-D", absWorkDir, "--disable-color")
+
+	runningCmd.Stdout = logWriter
+	runningCmd.Stderr = logWriter
+
+	addHideWindow(runningCmd)
+	err = setupDNS()
+	if err != nil {
+		logBoth("Error setting up DNS: %s", err)
+		return err
+	}
+
+	logBoth("Starting process...")
+	err = runningCmd.Start()
+	logBoth("Process started...")
+	if err != nil {
+		logBoth("Error starting process: %s", err)
+		return err
+	}
+
 	go func() {
-		logBoth("Starting service...")
-
-		runningCmd = exec.Command(BinaryFile, "run", "-c", ConfigFile, "-D", absWorkDir, "--disable-color")
-
-		runningCmd.Stdout = logWriter
-		runningCmd.Stderr = logWriter
-
-		addHideWindow(runningCmd)
-		logBoth("Starting process...")
-		err = runningCmd.Start()
-		logBoth("Process started...")
-		if err != nil {
-			logBoth("Error starting process: %s", err)
-			return
-		}
 		logBoth("Waiting process...")
 		err = runningCmd.Wait()
 		logBoth("Process finished...")
@@ -78,10 +88,16 @@ func (*program) Start(s service.Service) error {
 			logger.Infof("Error waiting process: %s", err)
 			return
 		}
-		err = s.Stop()
-		if err != nil {
-			logBoth("Error stopping service: %s", err)
-			return
+		if !exiting.Load() {
+			err = restoreDNS()
+			if err != nil {
+				logBoth("Error restoring DNS: %s", err)
+			}
+			err = s.Stop()
+			if err != nil {
+				logBoth("Error stopping service: %s", err)
+				return
+			}
 		}
 	}()
 
@@ -89,7 +105,13 @@ func (*program) Start(s service.Service) error {
 }
 
 func (*program) Stop(s service.Service) error {
+	exiting.Store(true)
 	if runningCmd != nil {
+		err := restoreDNS()
+		if err != nil {
+			log.Println("Error restoring DNS:", err)
+		}
+
 		if runtime.GOOS == "windows" {
 			return runningCmd.Process.Kill()
 		} else {
