@@ -17,7 +17,7 @@ func setupDNS() error {
 	psSet := `Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
     Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ServerAddresses ('0.0.0.0', '::')
 }`
-	cmd := exec.Command("powershell", "-Command", psSet)
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", psSet)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("设置 IPv4 静态 DNS 失败: %v\n%s", err, string(out))
 	}
@@ -32,7 +32,7 @@ func restoreDNS() error {
 
 	// 重置所有网卡 DNS
 	psReset := `Get-DnsClient | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ResetServerAddresses }`
-	cmd := exec.Command("powershell", "-Command", psReset)
+	cmd := exec.Command("powershell", "-NoProfile", "-Command", psReset)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("恢复自动 DNS 失败: %v\n%s", err, string(out))
 	}
