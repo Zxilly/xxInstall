@@ -2,6 +2,10 @@
 
 package main
 
-func setupDNS() {}
+func setupDNS() error {
+	return nil
+}
 
-func restoreDNS() {}
+func restoreDNS() error {
+	return nil
+}
