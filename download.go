@@ -195,10 +195,6 @@ func downloadBinary(prerelease bool, version string, mirror bool) {
 	if version != "" {
 		for _, release := range releases {
 			if release.GetTagName() == version {
-				if release.GetPrerelease() && !prerelease {
-					log.Fatalf("Version %s is a prerelease, use --prerelease to download", version)
-				}
-
 				latestRelease = release
 				break
 			}
@@ -211,6 +207,10 @@ func downloadBinary(prerelease bool, version string, mirror bool) {
 			if release.GetPrerelease() && !prerelease {
 				continue
 			}
+			if !release.GetPrerelease() && prerelease {
+				continue
+			}
+
 			if latestRelease == nil {
 				latestRelease = release
 			} else if release.GetPublishedAt().After(latestRelease.GetPublishedAt().Time) {
